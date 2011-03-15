@@ -1,0 +1,29 @@
+
+=pod
+
+=head1 NAME
+
+tlsme - TSL/SSL proxy
+
+=head1 SYNOPSIS
+
+tlsme [options]
+
+Options:
+
+    --help            brief help message
+
+    --listen          listen on (default 0.0.0.0:443)
+    --backend         backend address (default 127.0.0.1:8080)
+
+    --cert_file       path to certificate file
+    --key_file        path to private key file
+
+    --debug           debug mode
+
+=head1 DESCRIPTION
+
+TLS/SSL proxy in front of the application creates a transparent encryption
+tunnel.
+
+=cut
