@@ -3,6 +3,8 @@ package App::TLSMe;
 use strict;
 use warnings;
 
+our $VERSION = '0.00901';
+
 use constant DEBUG => $ENV{APP_TLSME_DEBUG};
 
 use App::TLSMe::Pool;
@@ -89,3 +91,55 @@ sub _bind_handler {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+App::TLSMe - TLS/SSL tunnel
+
+=head1 SYNOPSIS
+
+    App::TLSMe->new(
+        listen    => ':443',
+        backend   => 'localhost:8080',
+        cert_file => 'cert.pem',
+        key_file  => 'key.pem'
+    )->run;
+
+Run C<tlsme -h> for more options.
+
+=head1 DESCRIPTION
+
+This module is used by a command line application C<tlsme>. You might want to
+look at its documentation instead.
+
+=head1 METHODS
+
+=head2 C<new>
+
+    my $app = App::TLSMe->new;
+
+=head2 C<run>
+
+    $app->run;
+
+Start the secure tunnel.
+
+=head1 DEVELOPMENT
+
+=head2 Repository
+
+    http://github.com/vti/app-tlsme
+
+=head1 AUTHOR
+
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011, Viacheslav Tykhanovskyi
+
+This program is free software, you can redistribute it and/or modify it under
+the terms of the Artistic License version 2.0.
+
+=cut

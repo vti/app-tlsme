@@ -45,3 +45,40 @@ sub _new_instance {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+App::TLSMe::Poll - Connection pool
+
+=head1 SYNOPSIS
+
+    App::TLSMe::Pool->add_connection(...);
+
+    App::TLSMe::Pool->remove_connection(...);
+
+=head1 DESCRIPTION
+
+Singleton connection pool.
+
+=head1 METHODS
+
+=head2 C<instance>
+
+    App::TLSMe::Pool->instance;
+
+Return instance object.
+
+=head2 C<add_connection>
+
+    App::TLSMe::Pool->add_connection(...);
+
+Add new connection.
+
+=head2 C<remove_connection>
+
+    App::TLSMe::Pool->remove_connection(...);
+
+Remove connection.
+
+=cut

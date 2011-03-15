@@ -180,3 +180,30 @@ sub _on_read_handler {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+App::TLSMe::Connection - Connection class
+
+=head1 SYNOPSIS
+
+    App::TLSMe::Connection->new(
+        fh => $fh,
+        backend_host => 'localhost',
+        backend_port => 8080,
+        ...
+    );
+
+=head1 DESCRIPTION
+
+Object-Value that holds handles, callbacks and other information associated with
+proxy-backend connection.
+
+=head1 METHODS
+
+=head2 C<new>
+
+    my $connection = App::TLSMe::Connection->new;
+
+=cut
