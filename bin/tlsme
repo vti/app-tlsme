@@ -8,8 +8,8 @@ use Pod::Usage;
 
 my $listen    = ':443';
 my $backend   = '127.0.0.1:8080';
-my $cert_file = 'cacert.pem';
-my $key_file  = 'cakey.pem';
+my $cert_file = 'keys/cacert.pem';
+my $key_file  = 'keys/cakey.pem';
 my $debug;
 my $help;
 
@@ -44,30 +44,23 @@ tlsme - TSL/SSL proxy
 
 =head1 SYNOPSIS
 
-tlsme [options] [file ...]
+tlsme [options]
 
 Options:
 
-    -help            brief help message
-    -man             full documentation
+    --help            brief help message
 
-=head1 OPTIONS
+    --listen          listen on (default 0.0.0.0:443)
+    --backend         backend address (default 127.0.0.1:8080)
 
-=over 8
+    --cert_file       path to certificate file
+    --key_file        path to private key file
 
-=item B<-help>
-
-Print a brief help message and exits.
-
-=item B<-man>
-
-Prints the manual page and exits.
-
-=back
+    --debug           debug mode
 
 =head1 DESCRIPTION
 
-B<This program> will read the given input file(s) and do something
-useful with the contents thereof.
+TLS/SSL proxy in front of the application creates a transparent encryption
+tunnel.
 
 =cut
