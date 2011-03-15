@@ -26,4 +26,9 @@ Options:
 TLS/SSL proxy in front of the application creates a transparent encryption
 tunnel.
 
+=head1 HEADERS
+
+HTTP headers C<X-Forwarded-For> and C<X-Forwarded-Proto> are added to the http
+requests with corresponding values.
+
 =cut
