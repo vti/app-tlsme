@@ -4,3 +4,6 @@
 ^Makefile$
 ^\.git
 .tar.gz$
+README.pod
+.swp$
+Debian_CPANTS.txt
