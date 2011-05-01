@@ -19,6 +19,8 @@ GetOptions(
     "listen=s"  => \$listen,
     "backend=s" => \$backend,
     "debug"     => \$debug,
+    "cert_file=s" => \$cert_file,
+    "key_file=s" => \$key_file,
     "help|?"    => \$help
 ) or pod2usage(2);
 
