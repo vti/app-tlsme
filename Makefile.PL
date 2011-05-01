@@ -38,8 +38,9 @@ WriteMakefile(
 
     PREREQ_PM => {
         'AnyEvent'     => 0,
+        'Net::SSLeay'  => 0,
         'Pod::Usage'   => 0,
-        'Scalar::Util' => 0
+        'Scalar::Util' => 0,
     },
     test => {TESTS => 't/*.t t/*/*.t'}
 );
