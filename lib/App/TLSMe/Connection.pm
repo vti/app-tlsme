@@ -44,7 +44,7 @@ sub _build_handle {
             my $handle = shift;
             my ($is_fatal, $message) = @_;
 
-            DEBUG && warn "Error: $message";
+            DEBUG && warn "Error: $message\n";
 
             $self->_drop;
         },
@@ -55,7 +55,7 @@ sub _build_handle {
 sub _drop {
     my $self = shift;
 
-    warn "Connection $self->{fh} closed";
+    DEBUG && warn "Connection $self->{fh} closed\n";
 
     $self->{handle}->destroy;
 
@@ -121,7 +121,7 @@ sub _connect_to_backend {
                 my $backend_handle = shift;
                 my ($is_fatal, $message) = @_;
 
-                DEBUG && warn "Backend error: $message";
+                DEBUG && warn "Backend error: $message\n";
 
                 $backend_handle->destroy;
 
@@ -155,8 +155,6 @@ sub _on_send_handler {
             =~ s/ (?<=\x0a)\x0d?\x0a /$x_forwarded_for$x_forwarded_proto\x0d\x0a/xms
           )
         {
-            warn "proxy=\n" . $handle->rbuf;
-
             $self->{backend_handle}->push_write($handle->rbuf);
             $handle->rbuf = '';
 
@@ -172,7 +170,6 @@ sub _on_read_handler {
 
     return sub {
         my $backend_handle = shift;
-        warn "twiggy=" . $backend_handle->rbuf;
 
         $self->{handle}->push_write($backend_handle->rbuf);
         $backend_handle->rbuf = '';
