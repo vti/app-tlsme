@@ -15,7 +15,7 @@ use AnyEvent::Socket;
 
 sub new {
     my $class = shift;
-    my %args = @_;
+    my %args  = @_;
 
     my ($host, $port) = split ':', delete $args{listen}, -1;
     $host ||= '0.0.0.0';
@@ -34,8 +34,7 @@ sub new {
     };
     bless $self, $class;
 
-    $self->{clients} = {};
-    $self->{cv}      = AnyEvent->condvar;
+    $self->{cv} = AnyEvent->condvar;
 
     $self->_listen;
 
@@ -75,7 +74,7 @@ sub _accept_handler {
             cert_file    => $self->{cert_file},
             key_file     => $self->{key_file}
         );
-      };
+    };
 }
 
 sub _bind_handler {

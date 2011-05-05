@@ -3,7 +3,7 @@
 
 =head1 NAME
 
-tlsme - TSL/SSL proxy
+tlsme - TLS/SSL proxy
 
 =head1 SYNOPSIS
 
