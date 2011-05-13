@@ -49,7 +49,7 @@ __END__
 
 =head1 NAME
 
-App::TLSMe::Poll - Connection pool
+App::TLSMe::Pool - Connection pool
 
 =head1 SYNOPSIS
 
