@@ -8,12 +8,10 @@ use Pod::Usage;
 
 my $listen    = ':443';
 my $backend   = '127.0.0.1:8080';
-my $cert_file = 'keys/cacert.pem';
-my $key_file  = 'keys/cakey.pem';
+my $cert_file;
+my $key_file;
 my $debug;
 my $help;
-
-pod2usage(1) unless @ARGV;
 
 GetOptions(
     "listen=s"    => \$listen,

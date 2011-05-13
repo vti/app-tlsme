@@ -37,7 +37,7 @@ WriteMakefile(
     EXE_FILES => ['bin/tlsme'],
 
     PREREQ_PM => {
-        'AnyEvent'     => 0,
+        'AnyEvent'     => 5.34,
         'Net::SSLeay'  => 0,
         'Pod::Usage'   => 0,
         'Scalar::Util' => 0,

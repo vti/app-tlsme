@@ -7,11 +7,51 @@ our $VERSION = '0.00901';
 
 use constant DEBUG => $ENV{APP_TLSME_DEBUG};
 
+require Carp;
+
 use App::TLSMe::Pool;
 
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::Socket;
+
+use constant CERT => <<'EOF';
+-----BEGIN CERTIFICATE-----
+MIICsDCCAhmgAwIBAgIJAPZgxGgzkLMkMA0GCSqGSIb3DQEBBQUAMEUxCzAJBgNV
+BAYTAkFVMRMwEQYDVQQIEwpTb21lLVN0YXRlMSEwHwYDVQQKExhJbnRlcm5ldCBX
+aWRnaXRzIFB0eSBMdGQwHhcNMTEwMzE1MDgxMzExWhcNMzEwMzEwMDgxMzExWjBF
+MQswCQYDVQQGEwJBVTETMBEGA1UECBMKU29tZS1TdGF0ZTEhMB8GA1UEChMYSW50
+ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKB
+gQClL0W4K2Ux4ntepXG4Z4sHPn/KR7efIwy6ciEnOBFa8JPnnP2ZI8b4ifS8ayC0
+VqwzZgYEb+roCM2BZ8oJIxGkwS0iwb/16KDgw4ODrIT5c9gRnpbezLpbolbChQMb
+rhhH9qPswVPGXFdWIudgZ9bWV1NDGPdvt7tmxryWQO2PEQIDAQABo4GnMIGkMB0G
+A1UdDgQWBBTlwxPDs2JacAUoc8KSDPNDKTEZ3TB1BgNVHSMEbjBsgBTlwxPDs2Ja
+cAUoc8KSDPNDKTEZ3aFJpEcwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgTClNvbWUt
+U3RhdGUxITAfBgNVBAoTGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZIIJAPZgxGgz
+kLMkMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAGtfsSndB3GftZKEa
+74bgp8UZNJJT9W2bQgHFoL/4Tjl9CpoAtNR0wuTO7TvV+jzhON85YkMR83OQ4ol4
+J+ew017cvKvsk5lKNZhgX8d+CBgWHh5FBZA19TYmH4RgV0ZKGJnDky2CR3fdcHnk
+ChexCtgZ2nIYm3W/Z7wRA+xjHok=
+-----END CERTIFICATE-----
+EOF
+
+use constant KEY => << 'EOF';
+-----BEGIN RSA PRIVATE KEY-----
+MIICXwIBAAKBgQClL0W4K2Ux4ntepXG4Z4sHPn/KR7efIwy6ciEnOBFa8JPnnP2Z
+I8b4ifS8ayC0VqwzZgYEb+roCM2BZ8oJIxGkwS0iwb/16KDgw4ODrIT5c9gRnpbe
+zLpbolbChQMbrhhH9qPswVPGXFdWIudgZ9bWV1NDGPdvt7tmxryWQO2PEQIDAQAB
+AoGBAJkpduzol+EkTh4ZK5O/tmKWKemGjBTra97o+iKiUz1OOuYUY/R9/vzu9dVL
+Q7zTbMIPxF6S424Y02w8r1G/iZgLt3HjbYEbkBZWFIIH4CTttnd5IjtRsJvVkFU3
+YR6bWG4qvoqVxdlb2cE8BJofdM3f/zYkoP1UEBcwdUXLAvGdAkEA1jidDz7CgbN2
+2TS33/p6lHb4C9f+DedlWOJYzzBkfExOE1J1UdxzUtB4K6iZeE5idELCiOtXsxeV
+5Efahob4NwJBAMVma+lD8KVCZR/lOyAK3F9SHTgP1Wi3/Dawrq8Cc3emNusSLzsO
+kFSoW8p0jZUKx2PVO0Z1D3ls/UXPHBc/fvcCQQCAJJ929iDd+x+V8J4pYikfVEcu
+toanhIqwb72WOqlxXSe7ETFSxZ9Ko5+u5gzf1Wu5hhHeW4E7hVlJk93ZaTVjAkEA
+mjj04iAEaPjAjPTJBrW1inta/KvSLahg0lGjiHO/xqEDkxB3+gnc1Wdbn4cD/oeX
+U/YKA3f9iP6PufSfm8It7QJBAMZmOUrkGJyScCVP7ugzLliGExtYQeuXtl+79sOz
+M+T4ZKNBUAz3HOOy3HTMs1bpudLd/Jgpi9ftbW+0+fZ07II=
+-----END RSA PRIVATE KEY-----
+EOF
 
 sub new {
     my $class = shift;
@@ -25,12 +65,35 @@ sub new {
     $backend_host ||= 'localhost';
     $backend_port ||= 8080;
 
+    my $tls_ctx;
+
+    if (!defined $args{cert_file} && !defined $args{key_file}) {
+        DEBUG && warn "Using default certificate and private key values\n";
+
+        $tls_ctx = {cert => CERT, key => KEY};
+    }
+    elsif (defined $args{cert_file} && defined $args{key_file}) {
+        Carp::croak("Certificate file '$args{cert_file}' does not exist")
+          unless -f $args{cert_file};
+        Carp::croak("Private key file '$args{key_file}' does not exist")
+          unless -f $args{key_file};
+
+        $tls_ctx = {
+            cert_file => $args{cert_file},
+            key_file  => $args{key_file}
+        };
+    }
+    else {
+        Carp::croak('Either both cert_file and key_file must be specified '
+              . 'or both omitted (default cert and key will be used)');
+    }
+
     my $self = {
         host         => $host,
         port         => $port,
         backend_host => $backend_host,
         backend_port => $backend_port,
-        @_
+        tls_ctx      => $tls_ctx
     };
     bless $self, $class;
 
@@ -71,8 +134,7 @@ sub _accept_handler {
             backend_port => $self->{backend_port},
             peer_host    => $peer_host,
             peer_port    => $peer_port,
-            cert_file    => $self->{cert_file},
-            key_file     => $self->{key_file}
+            tls_ctx      => $self->{tls_ctx}
         );
     };
 }

@@ -29,11 +29,10 @@ sub _build_handle {
     weaken $self;
 
     return AnyEvent::Handle->new(
-        fh  => $self->{fh},
-        tls => 'accept',
-        tls_ctx =>
-          {cert_file => $self->{cert_file}, key_file => $self->{key_file}},
-        on_eof => sub {
+        fh      => $self->{fh},
+        tls     => 'accept',
+        tls_ctx => $self->{tls_ctx},
+        on_eof  => sub {
             my $handle = shift;
 
             DEBUG && warn "Client $self->{fh} disconnected\n";
