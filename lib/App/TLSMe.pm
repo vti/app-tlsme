@@ -7,13 +7,14 @@ our $VERSION = '0.00901';
 
 use constant DEBUG => $ENV{APP_TLSME_DEBUG};
 
+use File::Spec;
 require Carp;
-
-use App::TLSMe::Pool;
 
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::Socket;
+
+use App::TLSMe::Pool;
 
 use constant CERT => <<'EOF';
 -----BEGIN CERTIFICATE-----
@@ -61,9 +62,16 @@ sub new {
     $host ||= '0.0.0.0';
     $port ||= 443;
 
-    my ($backend_host, $backend_port) = split ':', delete $args{backend}, -1;
-    $backend_host ||= 'localhost';
-    $backend_port ||= 8080;
+    my ($backend_host, $backend_port);
+    if ($args{backend} =~ m/:\d+$/) {
+        ($backend_host, $backend_port) = split ':', delete $args{backend}, -1;
+        $backend_host ||= '127.0.0.1';
+        $backend_port ||= 8080;
+    }
+    else {
+        $backend_host = 'unix/';
+        $backend_port = File::Spec->rel2abs($args{backend});
+    }
 
     my $tls_ctx;
 
@@ -162,7 +170,7 @@ App::TLSMe - TLS/SSL tunnel
 
     App::TLSMe->new(
         listen    => ':443',
-        backend   => 'localhost:8080',
+        backend   => '127.0.0.1:8080',
         cert_file => 'cert.pem',
         key_file  => 'key.pem'
     )->run;

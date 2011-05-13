@@ -29,6 +29,6 @@ tunnel.
 =head1 HEADERS
 
 HTTP headers C<X-Forwarded-For> and C<X-Forwarded-Proto> are added to the http
-requests with corresponding values.
+requests with the corresponding values.
 
 =cut

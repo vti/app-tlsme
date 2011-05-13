@@ -51,10 +51,10 @@ Options:
     --help            brief help message
 
     --listen          listen on (default 0.0.0.0:443)
-    --backend         backend address (default 127.0.0.1:8080)
+    --backend         backend address or path to unix socket (default 127.0.0.1:8080)
 
-    --cert_file       path to certificate file
-    --key_file        path to private key file
+    --cert_file       path to certificate file (when omitted default is used)
+    --key_file        path to private key file (when omitted default is used)
 
     --debug           debug mode
 
