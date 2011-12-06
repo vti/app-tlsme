@@ -120,6 +120,14 @@ sub run {
     return $self;
 }
 
+sub stop {
+    my $self = shift;
+
+    $self->{cv}->send;
+
+    return $self;
+}
+
 sub _listen {
     my $self = shift;
 
