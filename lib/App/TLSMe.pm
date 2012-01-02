@@ -150,7 +150,28 @@ sub _accept_handler {
             backend_port => $self->{backend_port},
             peer_host    => $peer_host,
             peer_port    => $peer_port,
-            tls_ctx      => $self->{tls_ctx}
+            tls_ctx      => $self->{tls_ctx},
+            on_eof => sub {
+                my ($conn) = @_;
+                App::TLSMe::Pool->remove_connection($fh);
+            },
+            on_error => sub {
+                my ($conn) = @_;
+                App::TLSMe::Pool->remove_connection($fh);
+            },
+            on_backend_eof => sub {
+                my ($conn) = @_;
+            },
+            on_backend_error => sub {
+                my ($conn) = @_;
+
+                my $body = '<h1>502 Bad gateway</h1>';
+                my $length = length($body);
+                $conn->{handle}->push_write("HTTP/1.1 502 OK\015\012");
+                $conn->{handle}->push_write("Content-Length: $length\015\012");
+                $conn->{handle}->push_write("\015\012");
+                $conn->{handle}->push_write($body);
+            }
         );
     };
 }

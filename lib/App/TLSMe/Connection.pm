@@ -5,8 +5,6 @@ use warnings;
 
 use constant DEBUG => $ENV{APP_TLSME_DEBUG};
 
-use App::TLSMe::Pool;
-
 use Scalar::Util qw(weaken);
 use AnyEvent::Handle;
 use AnyEvent::Socket;
@@ -18,6 +16,10 @@ sub new {
     bless $self, $class;
 
     $self->{handle} = $self->_build_handle(@_);
+
+    $self->{on_eof}           ||= sub { };
+    $self->{on_error}         ||= sub { };
+    $self->{on_backend_error} ||= sub { };
 
     return $self;
 }
@@ -45,7 +47,7 @@ sub _build_handle {
 
             DEBUG && warn "Error: $message\n";
 
-            $self->_drop;
+            $self->_drop($message);
         },
         on_starttls => $self->_on_starttls_handler
     );
@@ -53,6 +55,7 @@ sub _build_handle {
 
 sub _drop {
     my $self = shift;
+    my ($error) = @_;
 
     DEBUG && warn "Connection $self->{fh} closed\n";
 
@@ -77,7 +80,12 @@ sub _drop {
 
     undef $handle;
 
-    App::TLSMe::Pool->remove_connection($self->{fh});
+    if (defined $error) {
+        $self->{on_error}->($self);
+    }
+    else {
+        $self->{on_eof}->($self);
+    }
 
     return $self;
 }
@@ -94,7 +102,7 @@ sub _on_starttls_handler {
         if (!$is_success) {
             DEBUG && warn "TLS error: $message\n";
 
-            return $self->_drop;
+            return $self->_drop($message);
         }
 
         DEBUG && warn "$message\n";
@@ -119,6 +127,7 @@ sub _connect_to_backend {
               && warn
               "Connection to backend $backend_host:$backend_port failed: $!\n";
 
+            $self->{on_backend_error}->($self);
             return $self->_drop;
         }
 
@@ -133,6 +142,7 @@ sub _connect_to_backend {
 
                 $backend_handle->destroy;
 
+                $self->{on_backend_eof}->($self);
                 $self->_drop;
             },
             on_error => sub {
@@ -143,6 +153,7 @@ sub _connect_to_backend {
 
                 $backend_handle->destroy;
 
+                $self->{on_backend_error}->($self);
                 $self->_drop;
             }
         );
