@@ -174,7 +174,7 @@ sub _accept_handler {
                 my ($conn) = @_;
             },
             on_backend_error => sub {
-                my ($conn) = @_;
+                my ($conn, $message) = @_;
 
                 my $response = $self->_build_http_response('502 Bad Gateway',
                     '<h1>502 Bad Gateway</h1>');

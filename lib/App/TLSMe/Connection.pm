@@ -159,7 +159,7 @@ sub _connect_to_backend {
 
                 $backend_handle->destroy;
 
-                $self->{on_backend_error}->($self);
+                $self->{on_backend_error}->($self, $message);
                 $self->_drop;
             }
         );
