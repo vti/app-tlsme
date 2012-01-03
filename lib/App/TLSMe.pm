@@ -167,10 +167,11 @@ sub _accept_handler {
 
                 my $body = '<h1>502 Bad gateway</h1>';
                 my $length = length($body);
-                $conn->{handle}->push_write("HTTP/1.1 502 OK\015\012");
-                $conn->{handle}->push_write("Content-Length: $length\015\012");
-                $conn->{handle}->push_write("\015\012");
-                $conn->{handle}->push_write($body);
+
+                $conn->write("HTTP/1.1 502 OK\015\012");
+                $conn->write("Content-Length: $length\015\012");
+                $conn->write("\015\012");
+                $conn->write($body);
             }
         );
     };

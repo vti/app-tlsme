@@ -24,6 +24,12 @@ sub new {
     return $self;
 }
 
+sub write {
+    my $self = shift;
+
+    $self->{handle}->push_write(@_);
+}
+
 sub _build_handle {
     my $self = shift;
     my %args = @_;
