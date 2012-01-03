@@ -73,12 +73,12 @@ sub new {
         $backend_port = File::Spec->rel2abs($args{backend});
     }
 
-    my $tls_ctx;
+    my $tls_ctx = {method => $args{method}};
 
     if (!defined $args{cert_file} && !defined $args{key_file}) {
         DEBUG && warn "Using default certificate and private key values\n";
 
-        $tls_ctx = {cert => CERT, key => KEY};
+        $tls_ctx = {%$tls_ctx, cert => CERT, key => KEY};
     }
     elsif (defined $args{cert_file} && defined $args{key_file}) {
         Carp::croak("Certificate file '$args{cert_file}' does not exist")
@@ -88,7 +88,7 @@ sub new {
 
         $tls_ctx = {
             cert_file => $args{cert_file},
-            key_file  => $args{key_file}
+            key_file  => $args{key_file} % $tls_ctx
         };
     }
     else {

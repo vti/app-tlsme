@@ -6,8 +6,9 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 
-my $listen    = ':443';
-my $backend   = '127.0.0.1:8080';
+my $listen  = ':443';
+my $backend = '127.0.0.1:8080';
+my $method  = 'any';
 my $cert_file;
 my $key_file;
 my $debug;
@@ -19,6 +20,7 @@ GetOptions(
     "debug"       => \$debug,
     "cert_file=s" => \$cert_file,
     "key_file=s"  => \$key_file,
+    "method=s"    => \$method,
     "help|?"      => \$help
 ) or pod2usage(2);
 
@@ -33,7 +35,8 @@ App::TLSMe->new(
     listen    => $listen,
     backend   => $backend,
     cert_file => $cert_file,
-    key_file  => $key_file
+    key_file  => $key_file,
+    method    => $method
 )->run;
 
 __END__
@@ -55,6 +58,8 @@ Options:
 
     --cert_file       path to certificate file (when omitted default is used)
     --key_file        path to private key file (when omitted default is used)
+
+    --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
 
     --debug           debug mode
 
