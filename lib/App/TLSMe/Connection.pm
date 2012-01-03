@@ -63,6 +63,13 @@ sub _drop {
     my $self = shift;
     my ($error) = @_;
 
+    if (defined $error) {
+        $self->{on_error}->($self, $error);
+    }
+    else {
+        $self->{on_eof}->($self);
+    }
+
     DEBUG && warn "Connection $self->{fh} closed\n";
 
     my $handle = delete $self->{handle};
@@ -85,13 +92,6 @@ sub _drop {
     );
 
     undef $handle;
-
-    if (defined $error) {
-        $self->{on_error}->($self);
-    }
-    else {
-        $self->{on_eof}->($self);
-    }
 
     return $self;
 }

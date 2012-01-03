@@ -151,12 +151,23 @@ sub _accept_handler {
             peer_host    => $peer_host,
             peer_port    => $peer_port,
             tls_ctx      => $self->{tls_ctx},
-            on_eof => sub {
+            on_eof       => sub {
                 my ($conn) = @_;
+
                 App::TLSMe::Pool->remove_connection($fh);
             },
             on_error => sub {
-                my ($conn) = @_;
+                my ($conn, $error) = @_;
+
+                if ($error =~ m/ssl23_get_client_hello: http request/) {
+                    my $response = $self->_build_http_response(
+                        '501 Not Implemented',
+                        '<h1>501 Not Implemented</h1><p>Maybe <code>https://</code> instead of <code>http://</code>?</p>'
+                    );
+
+                    syswrite $fh, $response;
+                }
+
                 App::TLSMe::Pool->remove_connection($fh);
             },
             on_backend_eof => sub {
@@ -165,13 +176,10 @@ sub _accept_handler {
             on_backend_error => sub {
                 my ($conn) = @_;
 
-                my $body = '<h1>502 Bad gateway</h1>';
-                my $length = length($body);
+                my $response = $self->_build_http_response('502 Bad Gateway',
+                    '<h1>502 Bad Gateway</h1>');
 
-                $conn->write("HTTP/1.1 502 OK\015\012");
-                $conn->write("Content-Length: $length\015\012");
-                $conn->write("\015\012");
-                $conn->write($body);
+                $conn->write($response);
             }
         );
     };
@@ -187,6 +195,16 @@ sub _bind_handler {
 
         return 8;
     };
+}
+
+sub _build_http_response {
+    my $self = shift;
+    my ($status_message, $body) = @_;
+
+    my $length = length($body);
+
+    return join "\015\012", "HTTP/1.1 $status_message",
+      "Content-Length: $length", "", $body;
 }
 
 1;
