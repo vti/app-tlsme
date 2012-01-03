@@ -1,4 +1,3 @@
-
 =pod
 
 =head1 NAME
@@ -14,10 +13,12 @@ Options:
     --help            brief help message
 
     --listen          listen on (default 0.0.0.0:443)
-    --backend         backend address (default 127.0.0.1:8080)
+    --backend         backend address or path to unix socket (default 127.0.0.1:8080)
 
-    --cert_file       path to certificate file
-    --key_file        path to private key file
+    --cert_file       path to certificate file (when omitted default is used)
+    --key_file        path to private key file (when omitted default is used)
+
+    --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
 
     --debug           debug mode
 
@@ -29,6 +30,6 @@ tunnel.
 =head1 HEADERS
 
 HTTP headers C<X-Forwarded-For> and C<X-Forwarded-Proto> are added to the http
-requests with the corresponding values.
+requests with corresponding values.
 
 =cut
