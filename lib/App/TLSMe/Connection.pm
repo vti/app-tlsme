@@ -15,7 +15,7 @@ sub new {
     my $self = {@_};
     bless $self, $class;
 
-    $self->{handle} = $self->_build_handle(@_);
+    $self->{handle} = $self->_build_handle();
 
     $self->{on_eof}           ||= sub { };
     $self->{on_error}         ||= sub { };
@@ -32,7 +32,6 @@ sub write {
 
 sub _build_handle {
     my $self = shift;
-    my %args = @_;
 
     weaken $self;
 
@@ -45,6 +44,10 @@ sub _build_handle {
 
             DEBUG && warn "Client $self->{fh} disconnected\n";
 
+            if (my $backend_handle = delete $self->{backend_handle}) {
+                $self->_close_handle($backend_handle);
+            }
+
             $self->_drop;
         },
         on_error => sub {
@@ -52,6 +55,10 @@ sub _build_handle {
             my ($is_fatal, $message) = @_;
 
             DEBUG && warn "Error: $message\n";
+
+            if (my $backend_handle = delete $self->{backend_handle}) {
+                $self->_close_handle($backend_handle);
+            }
 
             $self->_drop($message);
         },
@@ -74,22 +81,7 @@ sub _drop {
 
     my $handle = delete $self->{handle};
 
-    $handle->wtimeout(0);
-
-    $handle->on_drain;
-    $handle->on_error;
-
-    $handle->on_drain(
-        sub {
-            if ($_[0]->fh) {
-                shutdown $_[0]->fh, 1;
-                close $handle->fh;
-            }
-
-            $_[0]->destroy;
-            undef $handle;
-        }
-    );
+    $self->_close_handle($handle);
 
     undef $handle;
 
@@ -139,16 +131,20 @@ sub _connect_to_backend {
 
         DEBUG && warn "Connected to backend $backend_host:$backend_port\n";
 
+        return unless $self->{handle};
+
         my $backend_handle = $self->{backend_handle} = AnyEvent::Handle->new(
             fh     => $backend_fh,
             on_eof => sub {
                 my $backend_handle = shift;
 
-                DEBUG && 'Backend disconnected';
-
-                $backend_handle->destroy;
+                DEBUG && warn "Backend disconnected\n";
 
                 $self->{on_backend_eof}->($self);
+
+                $self->_close_handle($backend_handle);
+                delete $self->{backend_handle};
+
                 $self->_drop;
             },
             on_error => sub {
@@ -157,16 +153,20 @@ sub _connect_to_backend {
 
                 DEBUG && warn "Backend error: $message\n";
 
-                $backend_handle->destroy;
-
                 $self->{on_backend_error}->($self, $message);
+
+                $self->_close_handle($backend_handle);
+                delete $self->{backend_handle};
+
                 $self->_drop;
             }
         );
 
-        $self->{handle}->on_read($self->_on_send_handler);
+        if ($backend_handle) {
+            $self->{handle}->on_read($self->_on_send_handler);
 
-        $backend_handle->on_read($self->_on_read_handler);
+            $backend_handle->on_read($self->_on_read_handler);
+        }
       }
 }
 
@@ -184,14 +184,14 @@ sub _on_send_handler {
 
         if ($headers) {
             $self->{backend_handle}->push_write($handle->rbuf);
-            $handle->rbuf = '';
+            $handle->{rbuf} = '';
         }
         elsif ($handle->rbuf
             =~ s/ (?<=\x0a)\x0d?\x0a /$x_forwarded_for$x_forwarded_proto\x0d\x0a/xms
           )
         {
             $self->{backend_handle}->push_write($handle->rbuf);
-            $handle->rbuf = '';
+            $handle->{rbuf} = '';
 
             $headers = 1;
         }
@@ -204,11 +204,35 @@ sub _on_read_handler {
     weaken $self;
 
     return sub {
-        my $backend_handle = shift;
+        my ($backend_handle) = @_ or return;
 
         $self->{handle}->push_write($backend_handle->rbuf);
-        $backend_handle->rbuf = '';
+        $backend_handle->{rbuf} = '';
       }
+}
+
+sub _close_handle {
+    my $self = shift;
+    my ($handle) = @_;
+
+    $handle->wtimeout(0);
+
+    $handle->on_drain;
+    $handle->on_error;
+
+    $handle->on_drain(
+        sub {
+            if ($_[0]->fh) {
+                shutdown $_[0]->fh, 1;
+                close $handle->fh;
+            }
+
+            $_[0]->destroy;
+            undef $handle;
+        }
+    );
+
+    undef $handle;
 }
 
 1;

@@ -171,7 +171,6 @@ sub _accept_handler {
                 App::TLSMe::Pool->remove_connection($fh);
             },
             on_backend_eof => sub {
-                my ($conn) = @_;
             },
             on_backend_error => sub {
                 my ($conn, $message) = @_;
