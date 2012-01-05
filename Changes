@@ -2,6 +2,7 @@ Revision history for perl module App::TLSMe
 
 0.009002
 
+ - Better handles closing
  - Added 'method' option (as in AnyEvent::TLS "SSLv2" | "SSLv3" | "TLSv1" | "any")
  - Added 501 Not Implemented error (when http is used instead of https for example)
  - Added 502 Bad Gateway error (when connection to backend is refused)
