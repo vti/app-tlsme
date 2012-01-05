@@ -1,16 +1,12 @@
 use strict;
 use warnings;
 
-use Plack::Loader;
+use Test::More;
+use Test::TCP;
 
 use AnyEvent;
 use AnyEvent::Impl::Perl;
 use AnyEvent::Socket;
-
-use Test::More;
-use Test::TCP;
-
-use lib 'lib';
 
 use App::TLSMe;
 

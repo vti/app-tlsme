@@ -41,6 +41,8 @@ WriteMakefile(
         'Net::SSLeay'  => 0,
         'Pod::Usage'   => 0,
         'Scalar::Util' => 0,
+        'Test::More'   => 0,
+        'Test::TCP'    => 0
     },
     test => {TESTS => 't/*.t t/*/*.t'}
 );

@@ -262,4 +262,8 @@ proxy-backend connection.
 
     my $connection = App::TLSMe::Connection->new;
 
+=head2 C<write>
+
+    $connection->write(...);
+
 =cut

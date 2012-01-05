@@ -241,6 +241,12 @@ look at its documentation instead.
 
 Start the secure tunnel.
 
+=head2 C<stop>
+
+    $app->stop;
+
+Stop the secure tunnel (used for testing).
+
 =head1 DEVELOPMENT
 
 =head2 Repository
