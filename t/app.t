@@ -4,6 +4,8 @@ use warnings;
 use Test::More;
 use Test::TCP;
 
+plan skip_all => 'set TEST_APP to enable this test' unless $ENV{TEST_APP};
+
 use AnyEvent;
 use AnyEvent::Impl::Perl;
 use AnyEvent::Socket;

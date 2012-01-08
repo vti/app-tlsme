@@ -1,5 +1,9 @@
 Revision history for perl module App::TLSMe
 
+0.009003
+
+ - Test improvement
+
 0.009002
 
  - Better handles closing

@@ -3,7 +3,7 @@ package App::TLSMe;
 use strict;
 use warnings;
 
-our $VERSION = '0.009002';
+our $VERSION = '0.009003';
 
 use constant DEBUG => $ENV{APP_TLSME_DEBUG};
 
