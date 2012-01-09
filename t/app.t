@@ -59,8 +59,8 @@ sub _free_port {
     my ($from, $to) = @_;
 
 # http://enwp.org/List_of_TCP_and_UDP_port_numbers#Dynamic.2C_private_or_ephemeral_ports
-    $from //= 49152;
-    $to   //= 65535;
+    $from ||= 49152;
+    $to   ||= 65535;
     my $try = 0;
     while ($try <= 20) {
         my $port = int $from + rand $to - $from;
