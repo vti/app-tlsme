@@ -1,5 +1,9 @@
 Revision history for perl module App::TLSMe
 
+0.009004 2012-01-12
+
+ - Mostly distribution improvements
+
 0.009003 2012-01-08
 
  - Test improvement
