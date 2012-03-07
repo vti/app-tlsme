@@ -3,7 +3,7 @@ package App::TLSMe;
 use strict;
 use warnings;
 
-our $VERSION = '0.009004';
+our $VERSION = '0.10';
 
 use constant DEBUG => $ENV{APP_TLSME_DEBUG};
 
@@ -75,25 +75,24 @@ sub new {
 
     my $tls_ctx = {method => $args{method}};
 
-    if (!defined $args{cert_file} && !defined $args{key_file}) {
+    if (defined $args{cert_file}) {
+        Carp::croak("Certificate file '$args{cert_file}' does not exist")
+          unless -f $args{cert_file};
+
+        $tls_ctx->{cert_file} = $args{cert_file};
+
+        if ($args{key_file}) {
+            Carp::croak("Private key file '$args{key_file}' does not exist")
+              unless -f $args{key_file};
+
+            $tls_ctx->{key_file} = $args{key_file};
+        }
+
+    }
+    else {
         DEBUG && warn "Using default certificate and private key values\n";
 
         $tls_ctx = {%$tls_ctx, cert => CERT, key => KEY};
-    }
-    elsif (defined $args{cert_file} && defined $args{key_file}) {
-        Carp::croak("Certificate file '$args{cert_file}' does not exist")
-          unless -f $args{cert_file};
-        Carp::croak("Private key file '$args{key_file}' does not exist")
-          unless -f $args{key_file};
-
-        $tls_ctx = {
-            cert_file => $args{cert_file},
-            key_file  => $args{key_file} % $tls_ctx
-        };
-    }
-    else {
-        Carp::croak('Either both cert_file and key_file must be specified '
-              . 'or both omitted (default cert and key will be used)');
     }
 
     my $self = {
@@ -252,6 +251,12 @@ Stop the secure tunnel (used for testing).
 =head2 Repository
 
     http://github.com/vti/app-tlsme
+
+=head1 CREDITS
+
+Andrey Sidorov
+
+James D Bearden
 
 =head1 AUTHOR
 

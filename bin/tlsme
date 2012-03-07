@@ -56,12 +56,14 @@ Options:
     --listen          listen on (default 0.0.0.0:443)
     --backend         backend address or path to unix socket (default 127.0.0.1:8080)
 
-    --cert_file       path to certificate file (when omitted default is used)
-    --key_file        path to private key file (when omitted default is used)
+    --cert_file       path to certificate file (may contain a private key too)
+    --key_file        path to private key file
 
     --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
 
     --debug           debug mode
+
+When option C<cert_file> is omitted default testing certificate is used.
 
 =head1 DESCRIPTION
 
