@@ -37,13 +37,14 @@ WriteMakefile(
     EXE_FILES => ['bin/tlsme'],
 
     PREREQ_PM => {
-        'AnyEvent'     => 5.34,
-        'IO::Handle'   => 0,
-        'Net::SSLeay'  => 0,
-        'Pod::Usage'   => 0,
-        'Scalar::Util' => 0,
-        'Test::More'   => 0,
-        'Time::Piece'  => 0,
+        'AnyEvent'      => 5.34,
+        'IO::Handle'    => 0,
+        'Net::SSLeay'   => 0,
+        'Pod::Usage'    => 0,
+        'Proc::Pidfile' => 0,
+        'Scalar::Util'  => 0,
+        'Test::More'    => 0,
+        'Time::Piece'   => 0,
     },
     test => {TESTS => 't/*.t t/*/*.t'}
 );

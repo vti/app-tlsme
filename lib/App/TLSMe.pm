@@ -13,6 +13,8 @@ require Carp;
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::Socket;
+use POSIX 'setsid', ':sys_wait_h';
+use Proc::Pidfile;
 
 use App::TLSMe::Pool;
 use App::TLSMe::Logger;
@@ -76,9 +78,21 @@ sub new {
     bless $self, $class;
 
     $self->{pool}   ||= App::TLSMe::Pool->new;
-    $self->{logger} ||= $self->_build_logger($args{log});
+    $self->{logger} ||= $self->_build_logger($args{log_file});
+
+    if ($self->{pid_file}) {
+        $self->{pid_file} = File::Spec->rel2abs($self->{pid_file});
+    }
 
     $self->_register_signals;
+
+    if ($self->{daemonize}) {
+        die "Log file is required when daemonizing\n" unless $self->{log_file};
+
+        $self->_daemonize;
+    }
+
+    $self->_create_pidfile if $self->{pid_file};
 
     $self->_listen;
 
@@ -97,6 +111,35 @@ sub stop {
     my $self = shift;
 
     $self->{cv}->send;
+
+    $self->_log('Shutting down');
+
+    return $self;
+}
+
+sub _daemonize {
+    my $self = shift;
+
+    chdir '/' or die "Can't chdir to /: $!";
+
+    open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
+    open STDOUT, '>', '/dev/null' or die "Can't write to /dev/null: $!";
+    open STDERR, '>', '/dev/null' or die "Can't write to /dev/null: $!";
+
+    defined(my $pid = fork) or die "Can't fork: $!";
+    exit if $pid;
+
+    die "Can't start a new session: $!" if setsid == -1;
+
+    return $self;
+}
+
+sub _create_pidfile {
+    my $self = shift;
+
+    $self->{pid} = Proc::Pidfile->new(pidfile => $self->{pid_file});
+
+    $self->_log('Created pid file: ' . $self->{pid}->pidfile);
 
     return $self;
 }
@@ -176,12 +219,16 @@ sub _build_tls_ctx {
 sub _register_signals {
     my $self = shift;
 
-    $SIG{__DIE__} = sub {
+    $SIG{__WARN__} = sub {
         $self->_log(@_);
+    };
+
+    $SIG{__DIE__} = sub {
+        $self->_log(@_) if $self;
         exit(1);
     };
 
-    $SIG{INT} = sub {
+    $SIG{TERM} = $SIG{INT} = sub {
         $self->_log('Shutting down');
         exit(0);
     };
@@ -301,6 +348,8 @@ sub _build_http_response {
 
 sub _log {
     my $self = shift;
+
+    return unless $self->{logger};
 
     $self->{logger}->log(@_);
 }

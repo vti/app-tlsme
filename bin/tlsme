@@ -14,8 +14,10 @@ my $cert_password;
 my $key_file;
 my $user;
 my $group;
-my $log;
+my $log_file;
 my $debug;
+my $daemonize;
+my $pid_file;
 my $help;
 
 GetOptions(
@@ -28,7 +30,9 @@ GetOptions(
     "method=s"        => \$method,
     "user=s"          => \$user,
     "group=s"         => \$group,
-    "log=s"           => \$log,
+    "log_file=s"      => \$log_file,
+    "daemonize"       => \$daemonize,
+    "pid_file=s"      => \$pid_file,
     "help|?"          => \$help
 ) or pod2usage(2);
 
@@ -48,7 +52,9 @@ App::TLSMe->new(
     method        => $method,
     user          => $user,
     group         => $group,
-    log           => $log
+    log_file      => $log_file,
+    daemonize     => $daemonize,
+    pid_file      => $pid_file
 )->run;
 
 __END__
@@ -70,7 +76,6 @@ Options:
 
     --cert_file       path to certificate file (may contain a private key too)
     --key_file        path to private key file
-
     --cert_password   certificate password (promts for password if value is not provided)
 
     --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
@@ -78,8 +83,11 @@ Options:
     --user            drop privileges to user (ID or name)
     --group           drop privileges to group (ID)
 
-    --log             path to log file
+    --log_file        path to log file
     --debug           debug mode
+
+    --daemonize       daemonize (--log_file is required)
+    --pid_file        PID file
 
 When option C<cert_file> is omitted default testing certificate is used.
 

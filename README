@@ -13,7 +13,6 @@ SYNOPSIS
 
         --cert_file       path to certificate file (may contain a private key too)
         --key_file        path to private key file
-
         --cert_password   certificate password (promts for password if value is not provided)
 
         --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
@@ -21,8 +20,11 @@ SYNOPSIS
         --user            drop privileges to user (ID or name)
         --group           drop privileges to group (ID)
 
-        --log             path to log file
+        --log_file        path to log file
         --debug           debug mode
+
+        --daemonize       daemonize (--log_file is required)
+        --pid_file        PID file
 
     When option "cert_file" is omitted default testing certificate is used.
 
