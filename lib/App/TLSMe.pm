@@ -56,7 +56,7 @@ EOF
 
 sub new {
     my $class = shift;
-    my %args  = @_;
+    my (%args) = @_;
 
     my ($host, $port) = split ':', delete $args{listen}, -1;
     $host ||= '0.0.0.0';
@@ -100,7 +100,9 @@ sub new {
         port         => $port,
         backend_host => $backend_host,
         backend_port => $backend_port,
-        tls_ctx      => $tls_ctx
+        tls_ctx      => $tls_ctx,
+        user         => $args{user},
+        group        => $args{group}
     };
     bless $self, $class;
 
@@ -189,10 +191,30 @@ sub _bind_handler {
     return sub {
         my ($fh, $host, $port) = @_;
 
+        $self->_drop_privileges;
+
         DEBUG && warn "Listening on $host:$port\n";
 
         return 8;
     };
+}
+
+sub _drop_privileges {
+    my $self = shift;
+
+    if ($self->{user}) {
+        DEBUG && warn "Dropping privileges\n";
+
+        eval { require Privileges::Drop; 1 }
+          or do { die "Privileges::Drop is required\n" };
+
+        if ($self->{group}) {
+            Privileges::Drop::drop_uidgid($self->{user}, $self->{group});
+        }
+        else {
+            Privileges::Drop::drop_privileges($self->{user});
+        }
+    }
 }
 
 sub _build_http_response {

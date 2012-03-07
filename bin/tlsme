@@ -11,6 +11,8 @@ my $backend = '127.0.0.1:8080';
 my $method  = 'any';
 my $cert_file;
 my $key_file;
+my $user;
+my $group;
 my $debug;
 my $help;
 
@@ -21,6 +23,8 @@ GetOptions(
     "cert_file=s" => \$cert_file,
     "key_file=s"  => \$key_file,
     "method=s"    => \$method,
+    "user=s"      => \$user,
+    "group=s"     => \$group,
     "help|?"      => \$help
 ) or pod2usage(2);
 
@@ -36,7 +40,9 @@ App::TLSMe->new(
     backend   => $backend,
     cert_file => $cert_file,
     key_file  => $key_file,
-    method    => $method
+    method    => $method,
+    user      => $user,
+    group     => $group
 )->run;
 
 __END__
@@ -60,6 +66,9 @@ Options:
     --key_file        path to private key file
 
     --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
+
+    --user            drop privileges to user (ID or name)
+    --group           drop privileges to group (ID)
 
     --debug           debug mode
 
