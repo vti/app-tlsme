@@ -13,6 +13,7 @@ my $cert_file;
 my $key_file;
 my $user;
 my $group;
+my $log;
 my $debug;
 my $help;
 
@@ -25,6 +26,7 @@ GetOptions(
     "method=s"    => \$method,
     "user=s"      => \$user,
     "group=s"     => \$group,
+    "log=s"       => \$log,
     "help|?"      => \$help
 ) or pod2usage(2);
 
@@ -42,7 +44,8 @@ App::TLSMe->new(
     key_file  => $key_file,
     method    => $method,
     user      => $user,
-    group     => $group
+    group     => $group,
+    log       => $log
 )->run;
 
 __END__
@@ -70,6 +73,7 @@ Options:
     --user            drop privileges to user (ID or name)
     --group           drop privileges to group (ID)
 
+    --log             path to log file
     --debug           debug mode
 
 When option C<cert_file> is omitted default testing certificate is used.

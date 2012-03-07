@@ -15,6 +15,7 @@ use AnyEvent::Handle;
 use AnyEvent::Socket;
 
 use App::TLSMe::Pool;
+use App::TLSMe::Logger;
 
 use constant CERT => <<'EOF';
 -----BEGIN CERTIFICATE-----
@@ -70,22 +71,22 @@ sub new {
     }
     else {
         $backend_host = 'unix/';
-        $backend_port = File::Spec->rel2abs($args{backend});
+        $backend_port = File::Spec->rel2abs(delete $args{backend});
     }
 
-    my $tls_ctx = {method => $args{method}};
+    my $tls_ctx = {method => delete $args{method}};
 
-    if (defined $args{cert_file}) {
-        Carp::croak("Certificate file '$args{cert_file}' does not exist")
-          unless -f $args{cert_file};
+    if (defined (my $cert_file = delete $args{cert_file})) {
+        Carp::croak("Certificate file '$cert_file' does not exist")
+          unless -f $cert_file;
 
-        $tls_ctx->{cert_file} = $args{cert_file};
+        $tls_ctx->{cert_file} = $cert_file;
 
-        if ($args{key_file}) {
-            Carp::croak("Private key file '$args{key_file}' does not exist")
-              unless -f $args{key_file};
+        if (my $key_file = delete $args{key_file}) {
+            Carp::croak("Private key file '$key_file' does not exist")
+              unless -f $key_file;
 
-            $tls_ctx->{key_file} = $args{key_file};
+            $tls_ctx->{key_file} = $key_file;
         }
 
     }
@@ -101,14 +102,15 @@ sub new {
         backend_host => $backend_host,
         backend_port => $backend_port,
         tls_ctx      => $tls_ctx,
-        user         => $args{user},
-        group        => $args{group}
+        %args
     };
     bless $self, $class;
 
-    $self->{pool} = App::TLSMe::Pool->new;
+    $self->{pool} ||= App::TLSMe::Pool->new;
 
-    $self->{cv} = AnyEvent->condvar;
+    $self->{logger} ||= $self->_build_logger($args{log});
+
+    $self->_register_signals;
 
     $self->_listen;
 
@@ -131,8 +133,26 @@ sub stop {
     return $self;
 }
 
+sub _register_signals {
+    my $self = shift;
+
+    $SIG{__DIE__} = sub {
+        $self->_log(@_);
+        exit(1);
+    };
+
+    $SIG{INT} = sub {
+        $self->_log('Shutting down');
+        exit(0);
+    };
+}
+
 sub _listen {
     my $self = shift;
+
+    $self->_log('Starting up');
+
+    $self->{cv} = AnyEvent->condvar;
 
     tcp_server $self->{host}, $self->{port}, $self->_accept_handler,
       $self->_bind_handler;
@@ -144,8 +164,7 @@ sub _accept_handler {
     return sub {
         my ($fh, $peer_host, $peer_port) = @_;
 
-        DEBUG
-          && warn "Accepted connection $fh from $peer_host:$peer_port\n";
+        $self->_log("Accepted connection from $peer_host:$peer_port");
 
         $self->{pool}->add_connection(
             fh           => $fh,
@@ -156,6 +175,8 @@ sub _accept_handler {
             tls_ctx      => $self->{tls_ctx},
             on_eof       => sub {
                 my ($conn) = @_;
+
+                $self->_log("Closing connection from $peer_host:$peer_port");
 
                 $self->{pool}->remove_connection($fh);
             },
@@ -171,12 +192,20 @@ sub _accept_handler {
                     syswrite $fh, $response;
                 }
 
+                $self->_log("Closing connection from $peer_host:$peer_port: $error");
+
                 $self->{pool}->remove_connection($fh);
             },
+            on_backend_connected => sub {
+                $self->_log("Connected to backend");
+            },
             on_backend_eof => sub {
+                $self->_log("Disconnected from backend");
             },
             on_backend_error => sub {
                 my ($conn, $message) = @_;
+
+                $self->_log("Disconnected from backend: $message");
 
                 my $response = $self->_build_http_response('502 Bad Gateway',
                     '<h1>502 Bad Gateway</h1>');
@@ -193,9 +222,9 @@ sub _bind_handler {
     return sub {
         my ($fh, $host, $port) = @_;
 
-        $self->_drop_privileges;
+        $self->_log("Listening on $host:$port");
 
-        DEBUG && warn "Listening on $host:$port\n";
+        $self->_drop_privileges;
 
         return 8;
     };
@@ -205,7 +234,7 @@ sub _drop_privileges {
     my $self = shift;
 
     if ($self->{user}) {
-        DEBUG && warn "Dropping privileges\n";
+        $self->_log('Dropping privileges');
 
         eval { require Privileges::Drop; 1 }
           or do { die "Privileges::Drop is required\n" };
@@ -227,6 +256,24 @@ sub _build_http_response {
 
     return join "\015\012", "HTTP/1.1 $status_message",
       "Content-Length: $length", "", $body;
+}
+
+sub _log {
+    my $self = shift;
+
+    $self->{logger}->log(@_);
+}
+
+sub _build_logger {
+    my $self = shift;
+    my ($log) = @_;
+
+    my $fh;
+    if ($log) {
+        open $fh, '>>', $log or die "Can't open log file '$log': $!";
+    }
+
+    return App::TLSMe::Logger->new(fh => $fh);
 }
 
 1;

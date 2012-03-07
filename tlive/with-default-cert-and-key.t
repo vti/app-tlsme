@@ -11,6 +11,7 @@ use AnyEvent::Socket;
 use IO::Socket;
 
 use App::TLSMe;
+use App::TLSMe::Logger;
 use FreePort;
 
 my $host         = '127.0.0.1';
@@ -24,7 +25,10 @@ tcp_server $backend_host, $backend_port, sub {
     syswrite $fh, "200 OK\015\012";
 };
 
+my $null = '';
+open my $fh, '>', \$null;
 my $tlsme = App::TLSMe->new(
+    logger  => App::TLSMe::Logger->new(fh => $fh),
     listen  => "$host:$port",
     backend => "$backend_host:$backend_port"
 );

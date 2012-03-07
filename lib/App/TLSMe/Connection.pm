@@ -3,8 +3,6 @@ package App::TLSMe::Connection;
 use strict;
 use warnings;
 
-use constant DEBUG => $ENV{APP_TLSME_DEBUG};
-
 use Scalar::Util qw(weaken);
 use AnyEvent::Handle;
 use AnyEvent::Socket;
@@ -42,8 +40,6 @@ sub _build_handle {
         on_eof  => sub {
             my $handle = shift;
 
-            DEBUG && warn "Client $self->{fh} disconnected\n";
-
             if (my $backend_handle = delete $self->{backend_handle}) {
                 $self->_close_handle($backend_handle);
             }
@@ -53,8 +49,6 @@ sub _build_handle {
         on_error => sub {
             my $handle = shift;
             my ($is_fatal, $message) = @_;
-
-            DEBUG && warn "Error: $message\n";
 
             if (my $backend_handle = delete $self->{backend_handle}) {
                 $self->_close_handle($backend_handle);
@@ -77,8 +71,6 @@ sub _drop {
         $self->{on_eof}->($self);
     }
 
-    DEBUG && warn "Connection $self->{fh} closed\n";
-
     my $handle = delete $self->{handle};
 
     $self->_close_handle($handle);
@@ -98,12 +90,8 @@ sub _on_starttls_handler {
         my ($is_success, $message) = @_;
 
         if (!$is_success) {
-            DEBUG && warn "TLS error: $message\n";
-
             return $self->_drop($message);
         }
-
-        DEBUG && warn "$message\n";
 
         return $self->_connect_to_backend;
       }
@@ -121,15 +109,11 @@ sub _connect_to_backend {
         my ($backend_fh) = @_;
 
         if (!$backend_fh) {
-            DEBUG
-              && warn
-              "Connection to backend $backend_host:$backend_port failed: $!\n";
-
-            $self->{on_backend_error}->($self);
+            $self->{on_backend_error}->($self, $! || 'Connection refused');
             return $self->_drop;
         }
 
-        DEBUG && warn "Connected to backend $backend_host:$backend_port\n";
+        $self->{on_backend_connected}->($self);
 
         return unless $self->{handle};
 
@@ -137,8 +121,6 @@ sub _connect_to_backend {
             fh     => $backend_fh,
             on_eof => sub {
                 my $backend_handle = shift;
-
-                DEBUG && warn "Backend disconnected\n";
 
                 $self->{on_backend_eof}->($self);
 
@@ -150,8 +132,6 @@ sub _connect_to_backend {
             on_error => sub {
                 my $backend_handle = shift;
                 my ($is_fatal, $message) = @_;
-
-                DEBUG && warn "Backend error: $message\n";
 
                 $self->{on_backend_error}->($self, $message);
 
