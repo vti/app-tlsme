@@ -106,6 +106,8 @@ sub new {
     };
     bless $self, $class;
 
+    $self->{pool} = App::TLSMe::Pool->new;
+
     $self->{cv} = AnyEvent->condvar;
 
     $self->_listen;
@@ -145,7 +147,7 @@ sub _accept_handler {
         DEBUG
           && warn "Accepted connection $fh from $peer_host:$peer_port\n";
 
-        App::TLSMe::Pool->add_connection(
+        $self->{pool}->add_connection(
             fh           => $fh,
             backend_host => $self->{backend_host},
             backend_port => $self->{backend_port},
@@ -155,7 +157,7 @@ sub _accept_handler {
             on_eof       => sub {
                 my ($conn) = @_;
 
-                App::TLSMe::Pool->remove_connection($fh);
+                $self->{pool}->remove_connection($fh);
             },
             on_error => sub {
                 my ($conn, $error) = @_;
@@ -169,7 +171,7 @@ sub _accept_handler {
                     syswrite $fh, $response;
                 }
 
-                App::TLSMe::Pool->remove_connection($fh);
+                $self->{pool}->remove_connection($fh);
             },
             on_backend_eof => sub {
             },
