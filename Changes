@@ -1,5 +1,12 @@
 Revision history for perl module App::TLSMe
 
+0.10 2012-03-07
+
+ - Fixed private file setting (reported by James D Bearden)
+ - Fixed method setting
+ - Updated credits section
+ - Improved test suite
+
 0.009004 2012-01-12
 
  - Mostly distribution improvements
