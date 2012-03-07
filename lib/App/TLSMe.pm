@@ -59,42 +59,11 @@ sub new {
     my $class = shift;
     my (%args) = @_;
 
-    my ($host, $port) = split ':', delete $args{listen}, -1;
-    $host ||= '0.0.0.0';
-    $port ||= 443;
+    my ($host, $port) = $class->_parse_listen_address($args{listen});
+    my ($backend_host, $backend_port) =
+      $class->_parse_backend_address($args{backend});
 
-    my ($backend_host, $backend_port);
-    if ($args{backend} =~ m/:\d+$/) {
-        ($backend_host, $backend_port) = split ':', delete $args{backend}, -1;
-        $backend_host ||= '127.0.0.1';
-        $backend_port ||= 8080;
-    }
-    else {
-        $backend_host = 'unix/';
-        $backend_port = File::Spec->rel2abs(delete $args{backend});
-    }
-
-    my $tls_ctx = {method => delete $args{method}};
-
-    if (defined (my $cert_file = delete $args{cert_file})) {
-        Carp::croak("Certificate file '$cert_file' does not exist")
-          unless -f $cert_file;
-
-        $tls_ctx->{cert_file} = $cert_file;
-
-        if (my $key_file = delete $args{key_file}) {
-            Carp::croak("Private key file '$key_file' does not exist")
-              unless -f $key_file;
-
-            $tls_ctx->{key_file} = $key_file;
-        }
-
-    }
-    else {
-        DEBUG && warn "Using default certificate and private key values\n";
-
-        $tls_ctx = {%$tls_ctx, cert => CERT, key => KEY};
-    }
+    my $tls_ctx = $class->_build_tls_ctx(%args);
 
     my $self = {
         host         => $host,
@@ -106,8 +75,7 @@ sub new {
     };
     bless $self, $class;
 
-    $self->{pool} ||= App::TLSMe::Pool->new;
-
+    $self->{pool}   ||= App::TLSMe::Pool->new;
     $self->{logger} ||= $self->_build_logger($args{log});
 
     $self->_register_signals;
@@ -131,6 +99,78 @@ sub stop {
     $self->{cv}->send;
 
     return $self;
+}
+
+sub _parse_listen_address {
+    my $self = shift;
+    my ($address) = @_;
+
+    my ($host, $port) = split ':', $address, -1;
+    $host ||= '0.0.0.0';
+    $port ||= 443;
+
+    return ($host, $port);
+}
+
+sub _parse_backend_address {
+    my $self = shift;
+    my ($address) = @_;
+
+    my ($backend_host, $backend_port);
+
+    if ($address =~ m/:\d+$/) {
+        ($backend_host, $backend_port) = split ':', $address, -1;
+        $backend_host ||= '127.0.0.1';
+        $backend_port ||= 8080;
+    }
+    else {
+        $backend_host = 'unix/';
+        $backend_port = File::Spec->rel2abs($address);
+    }
+
+    return ($backend_host, $backend_port);
+}
+
+sub _build_tls_ctx {
+    my $self = shift;
+    my (%args) = @_;
+
+    my $tls_ctx = {method => delete $args{method}};
+
+    if (defined(my $cert_file = delete $args{cert_file})) {
+        Carp::croak("Certificate file '$cert_file' does not exist")
+          unless -f $cert_file;
+
+        $tls_ctx->{cert_file} = $cert_file;
+
+        if (defined(my $password = delete $args{cert_password})) {
+            if ($password eq '') {
+                print 'Enter certificate password: ';
+                system('stty', '-echo');
+                $password = <STDIN>;
+                system('stty', 'echo');
+                chomp $password;
+                print "\n";
+            }
+
+            $tls_ctx->{cert_password} = $password;
+        }
+
+        if (my $key_file = delete $args{key_file}) {
+            Carp::croak("Private key file '$key_file' does not exist")
+              unless -f $key_file;
+
+            $tls_ctx->{key_file} = $key_file;
+        }
+
+    }
+    else {
+        DEBUG && warn "Using default certificate and private key values\n";
+
+        $tls_ctx = {%$tls_ctx, cert => CERT, key => KEY};
+    }
+
+    return $tls_ctx;
 }
 
 sub _register_signals {
@@ -192,7 +232,8 @@ sub _accept_handler {
                     syswrite $fh, $response;
                 }
 
-                $self->_log("Closing connection from $peer_host:$peer_port: $error");
+                $self->_log(
+                    "Closing connection from $peer_host:$peer_port: $error");
 
                 $self->{pool}->remove_connection($fh);
             },
