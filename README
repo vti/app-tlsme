@@ -11,6 +11,8 @@ SYNOPSIS
         --listen          listen on (default 0.0.0.0:443)
         --backend         backend address or path to unix socket (default 127.0.0.1:8080)
 
+        --backlog         backlog size (default 128)
+
         --cert_file       path to certificate file (may contain a private key too)
         --key_file        path to private key file
         --cert_password   certificate password (promts for password if value is not provided)

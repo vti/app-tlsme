@@ -12,6 +12,7 @@ require Carp;
 
 use AnyEvent;
 use AnyEvent::Handle;
+use AnyEvent::TLS;
 use AnyEvent::Socket;
 use POSIX 'setsid', ':sys_wait_h';
 use Proc::Pidfile;
@@ -66,6 +67,7 @@ sub new {
       $class->_parse_backend_address($args{backend});
 
     my $tls_ctx = $class->_build_tls_ctx(%args);
+    $tls_ctx->init;
 
     my $self = {
         host         => $host,
@@ -178,7 +180,7 @@ sub _build_tls_ctx {
     my $self = shift;
     my (%args) = @_;
 
-    my $tls_ctx = {method => delete $args{method}};
+    my $tls_ctx = {method => delete $args{method}, cache => 1};
 
     if (defined(my $cert_file = delete $args{cert_file})) {
         Carp::croak("Certificate file '$cert_file' does not exist")
@@ -213,7 +215,7 @@ sub _build_tls_ctx {
         $tls_ctx = {%$tls_ctx, cert => CERT, key => KEY};
     }
 
-    return $tls_ctx;
+    return AnyEvent::TLS->new(%$tls_ctx);
 }
 
 sub _register_signals {
@@ -314,7 +316,7 @@ sub _bind_handler {
 
         $self->_drop_privileges;
 
-        return 8;
+        return $self->{backlog} || 128;
     };
 }
 
