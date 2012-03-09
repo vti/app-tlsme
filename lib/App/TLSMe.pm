@@ -278,7 +278,8 @@ sub _accept_handler {
                 if ($error =~ m/ssl23_get_client_hello: http request/) {
                     my $response = $self->_build_http_response(
                         '501 Not Implemented',
-                        '<h1>501 Not Implemented</h1><p>Maybe <code>https://</code> instead of <code>http://</code>?</p>'
+                        '<h1>501 Not Implemented</h1>'
+                          . '<p>Try <code>https://</code> instead of <code>http://</code>?</p>'
                     );
 
                     syswrite $fh, $response;

@@ -41,6 +41,7 @@ sub _build_handle {
             my $handle = shift;
 
             if (my $backend_handle = delete $self->{backend_handle}) {
+                $self->{on_backend_eof}->($self);
                 $self->_close_handle($backend_handle);
             }
 
@@ -51,6 +52,7 @@ sub _build_handle {
             my ($is_fatal, $message) = @_;
 
             if (my $backend_handle = delete $self->{backend_handle}) {
+                $self->{on_backend_error}->($self, $message || $!);
                 $self->_close_handle($backend_handle);
             }
 
