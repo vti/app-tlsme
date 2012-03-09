@@ -8,11 +8,12 @@ use Pod::Usage;
 
 my $listen  = ':443';
 my $backend = '127.0.0.1:8080';
-my $method  = 'any';
 my $backlog;
 my $cert_file;
 my $cert_password;
 my $key_file;
+my $method = 'any';
+my $cipher_list;
 my $user;
 my $group;
 my $log_file;
@@ -30,6 +31,7 @@ GetOptions(
     "cert_password:s" => \$cert_password,
     "key_file=s"      => \$key_file,
     "method=s"        => \$method,
+    "cipher_list=s"   => \$cipher_list,
     "user=s"          => \$user,
     "group=s"         => \$group,
     "log_file=s"      => \$log_file,
@@ -53,6 +55,7 @@ App::TLSMe->new(
     cert_password => $cert_password,
     key_file      => $key_file,
     method        => $method,
+    cipher_list   => $cipher_list,
     user          => $user,
     group         => $group,
     log_file      => $log_file,
@@ -81,9 +84,10 @@ Options:
 
     --cert_file       path to certificate file (may contain a private key too)
     --key_file        path to private key file
-    --cert_password   certificate password (promts for password if value is not provided)
+    --cert_password   certificate password (promts unless value provided)
 
-    --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
+    --method          protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
+    --cipher_list     list of ciphers to use ("AES:ALL:!aNULL:!eNULL:+RC4:@STRENGTH")
 
     --user            drop privileges to user (ID or name)
     --group           drop privileges to group (ID)

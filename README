@@ -15,9 +15,10 @@ SYNOPSIS
 
         --cert_file       path to certificate file (may contain a private key too)
         --key_file        path to private key file
-        --cert_password   certificate password (promts for password if value is not provided)
+        --cert_password   certificate password (promts unless value provided)
 
-        --method          the protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
+        --method          protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
+        --cipher_list     list of ciphers to use ("AES:ALL:!aNULL:!eNULL:+RC4:@STRENGTH")
 
         --user            drop privileges to user (ID or name)
         --group           drop privileges to group (ID)

@@ -11,7 +11,6 @@ use File::Spec;
 require Carp;
 
 use AnyEvent;
-use AnyEvent::Handle;
 use AnyEvent::TLS;
 use AnyEvent::Socket;
 use POSIX 'setsid', ':sys_wait_h';
@@ -180,7 +179,11 @@ sub _build_tls_ctx {
     my $self = shift;
     my (%args) = @_;
 
-    my $tls_ctx = {method => delete $args{method}, cache => 1};
+    my $tls_ctx = {method => delete $args{method}};
+
+    if (my $cipher_list = delete $args{cipher_list}) {
+        $tls_ctx->{cipher_list} = $cipher_list;
+    }
 
     if (defined(my $cert_file = delete $args{cert_file})) {
         Carp::croak("Certificate file '$cert_file' does not exist")
