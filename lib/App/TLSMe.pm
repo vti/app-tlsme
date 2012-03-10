@@ -79,6 +79,8 @@ sub new {
     bless $self, $class;
 
     $self->{protocol} ||= 'http';
+    die "Unknown protocol '$self->{protocol}'"
+      unless $self->{protocol} =~ m/^http|raw$/;
 
     $self->{pool}   ||= App::TLSMe::Pool->new;
     $self->{logger} ||= $self->_build_logger($args{log_file});
