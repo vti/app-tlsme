@@ -3,7 +3,6 @@ package App::TLSMe::Connection;
 use strict;
 use warnings;
 
-use Scalar::Util qw(weaken);
 use AnyEvent::Handle;
 use AnyEvent::Socket;
 
@@ -13,7 +12,7 @@ sub new {
     my $self = {@_};
     bless $self, $class;
 
-    $self->{handle} = $self->_build_handle();
+    $self->{handle} = $self->_build_listen_handle($self->{fh});
 
     $self->{on_eof}           ||= sub { };
     $self->{on_error}         ||= sub { };
@@ -26,40 +25,6 @@ sub write {
     my $self = shift;
 
     $self->{handle}->push_write(@_);
-}
-
-sub _build_handle {
-    my $self = shift;
-
-    weaken $self;
-
-    return AnyEvent::Handle->new(
-        fh      => $self->{fh},
-        tls     => 'accept',
-        tls_ctx => $self->{tls_ctx},
-        on_eof  => sub {
-            my $handle = shift;
-
-            if (my $backend_handle = delete $self->{backend_handle}) {
-                $self->{on_backend_eof}->($self);
-                $self->_close_handle($backend_handle);
-            }
-
-            $self->_drop;
-        },
-        on_error => sub {
-            my $handle = shift;
-            my ($is_fatal, $message) = @_;
-
-            if (my $backend_handle = delete $self->{backend_handle}) {
-                $self->{on_backend_error}->($self, $message || $!);
-                $self->_close_handle($backend_handle);
-            }
-
-            $self->_drop($message);
-        },
-        on_starttls => $self->_on_starttls_handler
-    );
 }
 
 sub _drop {
@@ -85,9 +50,7 @@ sub _drop {
 sub _on_starttls_handler {
     my $self = shift;
 
-    weaken $self;
-
-    return sub {
+    sub {
         my $handle = shift;
         my ($is_success, $message) = @_;
 
@@ -95,67 +58,103 @@ sub _on_starttls_handler {
             return $self->_drop($message);
         }
 
-        return $self->_connect_to_backend;
-      }
+        $self->_connect_to_backend;
+    };
 }
 
 sub _connect_to_backend {
     my $self = shift;
 
-    weaken $self;
+    $self->{backend_handle} = $self->_build_backend_handle(
+        connect => [$self->{backend_host}, $self->{backend_port}]);
+}
 
-    my $backend_host = $self->{backend_host};
-    my $backend_port = $self->{backend_port};
+sub _build_listen_handle {
+    my $self = shift;
+    my ($fh) = @_;
 
-    tcp_connect $backend_host, $backend_port, sub {
-        my ($backend_fh) = @_;
+    return $self->_build_handle(
+        fh      => $fh,
+        tls     => 'accept',
+        tls_ctx => $self->{tls_ctx},
+        timeout => 8,
+        on_eof  => sub {
+            my $handle = shift;
 
-        if (!$backend_fh) {
-            $self->{on_backend_error}->($self, $! || 'Connection refused');
-            return $self->_drop;
-        }
-
-        $self->{on_backend_connected}->($self);
-
-        return unless $self->{handle};
-
-        my $backend_handle = $self->{backend_handle} = AnyEvent::Handle->new(
-            fh     => $backend_fh,
-            on_eof => sub {
-                my $backend_handle = shift;
-
+            if (my $backend_handle = delete $self->{backend_handle}) {
                 $self->{on_backend_eof}->($self);
-
                 $self->_close_handle($backend_handle);
-                delete $self->{backend_handle};
-
-                $self->_drop;
-            },
-            on_error => sub {
-                my $backend_handle = shift;
-                my ($is_fatal, $message) = @_;
-
-                $self->{on_backend_error}->($self, $message);
-
-                $self->_close_handle($backend_handle);
-                delete $self->{backend_handle};
-
-                $self->_drop;
             }
-        );
 
-        if ($backend_handle) {
+            $self->_drop;
+        },
+        on_error => sub {
+            my $handle = shift;
+            my ($is_fatal, $message) = @_;
+
+            if (my $backend_handle = delete $self->{backend_handle}) {
+                $self->{on_backend_error}->($self, $message || $!);
+                $self->_close_handle($backend_handle);
+            }
+
+            $self->_drop($message);
+        },
+        on_starttls => $self->_on_starttls_handler
+    );
+}
+
+sub _build_backend_handle {
+    my $self = shift;
+
+    $self->_build_handle(
+        on_connect => sub {
+            $self->{on_backend_connected}->($self);
+
             $self->{handle}->on_read($self->_on_send_handler);
 
-            $backend_handle->on_read($self->_on_read_handler);
-        }
-      }
+            $self->{backend_handle}->on_read($self->_on_read_handler);
+        },
+        on_connect_error => sub {
+            my $backend_handle = shift;
+            my ($message) = @_;
+
+            $self->{on_backend_error}->($self, $message);
+
+            $self->_drop;
+        },
+        on_eof => sub {
+            my $backend_handle = shift;
+
+            $self->{on_backend_eof}->($self);
+
+            $self->_close_handle($backend_handle);
+            delete $self->{backend_handle};
+
+            $self->_drop;
+        },
+        on_error => sub {
+            my $backend_handle = shift;
+            my ($is_fatal, $message) = @_;
+
+            $self->{on_backend_error}->($self, $message);
+
+            $self->_close_handle($backend_handle);
+            delete $self->{backend_handle};
+
+            $self->_drop;
+        },
+        @_
+    );
+}
+
+sub _build_handle {
+    my $self = shift;
+
+    return AnyEvent::Handle->new(no_delay => 1, @_);
 }
 
 sub _on_send_handler {
     my $self = shift;
-
-    weaken $self;
 
     my $x_forwarded_for   = "X-Forwarded-For: $self->{peer_host}\x0d\x0a";
     my $x_forwarded_proto = "X-Forwarded-Proto: https\x0d\x0a";
@@ -183,8 +182,6 @@ sub _on_send_handler {
 sub _on_read_handler {
     my $self = shift;
 
-    weaken $self;
-
     return sub {
         my ($backend_handle) = @_ or return;
 
@@ -204,11 +201,6 @@ sub _close_handle {
 
     $handle->on_drain(
         sub {
-            if ($_[0]->fh) {
-                shutdown $_[0]->fh, 1;
-                close $handle->fh;
-            }
-
             $_[0]->destroy;
             undef $handle;
         }
