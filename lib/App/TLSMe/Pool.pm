@@ -3,7 +3,8 @@ package App::TLSMe::Pool;
 use strict;
 use warnings;
 
-use App::TLSMe::Connection;
+use App::TLSMe::Connection::raw;
+use App::TLSMe::Connection::http;
 
 sub new {
     my $class = shift;
@@ -20,7 +21,9 @@ sub add_connection {
     my $self = shift;
     my (%args) = @_;
 
-    $self->{connections}->{$args{fh}} = App::TLSMe::Connection->new(%args);
+    my $connection_class = 'App::TLSMe::Connection::' . $args{protocol};
+
+    $self->{connections}->{$args{fh}} = $connection_class->new(%args);
 }
 
 sub remove_connection {

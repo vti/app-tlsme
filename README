@@ -20,6 +20,8 @@ SYNOPSIS
         --method          protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
         --cipher_list     list of ciphers to use ("AES:ALL:!aNULL:!eNULL:+RC4:@STRENGTH")
 
+        --protocol        underlying protocol ("raw" | "http")
+
         --user            drop privileges to user (ID or name)
         --group           drop privileges to group (ID)
 
@@ -36,6 +38,6 @@ DESCRIPTION
     encryption tunnel.
 
 HEADERS
-    HTTP headers "X-Forwarded-For" and "X-Forwarded-Proto" are added to the
-    http requests with corresponding values.
+    When using "http" protocol HTTP headers "X-Forwarded-For" and
+    "X-Forwarded-Proto" are added to the requests with corresponding values.
 

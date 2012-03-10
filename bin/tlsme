@@ -14,6 +14,7 @@ my $cert_password;
 my $key_file;
 my $method = 'any';
 my $cipher_list;
+my $protocol;
 my $user;
 my $group;
 my $log_file;
@@ -32,6 +33,7 @@ GetOptions(
     "key_file=s"      => \$key_file,
     "method=s"        => \$method,
     "cipher_list=s"   => \$cipher_list,
+    "protocol=s"      => \$protocol,
     "user=s"          => \$user,
     "group=s"         => \$group,
     "log_file=s"      => \$log_file,
@@ -56,6 +58,7 @@ App::TLSMe->new(
     key_file      => $key_file,
     method        => $method,
     cipher_list   => $cipher_list,
+    protocol      => $protocol,
     user          => $user,
     group         => $group,
     log_file      => $log_file,
@@ -89,6 +92,8 @@ Options:
     --method          protocol parser to use ("SSLv2" | "SSLv3" | "TLSv1" | "any")
     --cipher_list     list of ciphers to use ("AES:ALL:!aNULL:!eNULL:+RC4:@STRENGTH")
 
+    --protocol        underlying protocol ("raw" | "http")
+
     --user            drop privileges to user (ID or name)
     --group           drop privileges to group (ID)
 
@@ -107,7 +112,7 @@ tunnel.
 
 =head1 HEADERS
 
-HTTP headers C<X-Forwarded-For> and C<X-Forwarded-Proto> are added to the http
-requests with corresponding values.
+When using C<http> protocol HTTP headers C<X-Forwarded-For> and
+C<X-Forwarded-Proto> are added to the requests with corresponding values.
 
 =cut

@@ -78,6 +78,8 @@ sub new {
     };
     bless $self, $class;
 
+    $self->{protocol} ||= 'http';
+
     $self->{pool}   ||= App::TLSMe::Pool->new;
     $self->{logger} ||= $self->_build_logger($args{log_file});
 
@@ -88,7 +90,8 @@ sub new {
     $self->_register_signals;
 
     if ($self->{daemonize}) {
-        die "Log file is required when daemonizing\n" unless $self->{log_file};
+        die "Log file is required when daemonizing\n"
+          unless $self->{log_file};
 
         $self->_daemonize;
     }
@@ -259,6 +262,7 @@ sub _accept_handler {
         $self->_log("Accepted connection from $peer_host:$peer_port");
 
         $self->{pool}->add_connection(
+            protocol     => $self->{protocol},
             fh           => $fh,
             backend_host => $self->{backend_host},
             backend_port => $self->{backend_port},
