@@ -9,3 +9,4 @@
 .gitignore
 README.pod
 Debian_CPANTS.txt
+MYMETA.*
